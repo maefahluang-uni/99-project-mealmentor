@@ -6,9 +6,12 @@ An application that calculates the calories of food from images.
 - 6431503059 Supakorn Hanprasert
 - 6431503065 Sukrit Siritip
 
-## Instruction
-You need to create skeleton of your project's development. It does not necessary include the complete source code. Please follow instructions below:
-- Edit readme file that briefly explains your project and details of members.​ 
-- Create folder structure and some source code to prepare for development
-- Decide what features to roll out and who is responsible for it.​ Create branches for each feature. Explain each feature in Readme file in their own branch​ 
-- Create Docker file for your deployment of your application 
+## Project instruction
+From project now, There're 2 branches of source code in git project.One is the part of application 
+interface with feature importing food photo from users will be transfered to another one branch that
+stored source code of Ai image classification system that was developed on Python.And how our image 
+classification working is input food images dataset then embedding value from image data transformed
+to vector value and classify the metadata,training model to process image classification afterward
+then stored at vector datastores.When application interface imported food image,it's also embedded
+to vectorthen query with vector datastores to detected and assigned what's the imported image from 
+application. 
