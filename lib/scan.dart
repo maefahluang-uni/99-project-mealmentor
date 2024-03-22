@@ -1,7 +1,10 @@
 // scan.dart
+
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 
 class ScanPage extends StatelessWidget {
   @override
@@ -32,6 +35,9 @@ class ImagePickerWidget extends StatefulWidget {
 
 class _ImagePickerWidgetState extends State<ImagePickerWidget> {
   late File _image; // Non-nullable variable
+  String? _predictionResult;
+  double? _caloriesResult; // Changed to double
+  bool _isLoading = false;
 
   final ImagePicker _picker = ImagePicker();
 
@@ -50,6 +56,9 @@ class _ImagePickerWidgetState extends State<ImagePickerWidget> {
       setState(() {
         _image = File(pickedFile.path);
       });
+
+      // Call the predictImage method here
+      predictImage();
     }
   }
 
@@ -62,12 +71,43 @@ class _ImagePickerWidgetState extends State<ImagePickerWidget> {
       setState(() {
         _image = File(pickedFile.path);
       });
+
+      // Call the predictImage method here
+      predictImage();
+    }
+  }
+
+  Future<void> predictImage() async {
+    setState(() {
+      _isLoading = true;
+    });
+
+    final url = Uri.parse('https://pinecone-api-dfkeodpluq-uc.a.run.app/predict');
+    final request = http.MultipartRequest('POST', url);
+    request.files.add(await http.MultipartFile.fromPath('image', _image.path));
+
+    final response = await request.send();
+    if (response.statusCode == 200) {
+      final responseBody = await response.stream.bytesToString();
+      final responseJson = jsonDecode(responseBody);
+      setState(() {
+        _predictionResult = responseJson['category'];
+        _caloriesResult = double.tryParse(responseJson['calories'] ?? ''); // Convert to double
+        _isLoading = false;
+      });
+    } else {
+      setState(() {
+        _predictionResult = 'Error predicting image';
+        _caloriesResult = null;
+        _isLoading = false;
+      });
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Column(
+      crossAxisAlignment: CrossAxisAlignment.center,
       children: [
         Expanded(
           child: Center(
@@ -76,6 +116,24 @@ class _ImagePickerWidgetState extends State<ImagePickerWidget> {
                 : Image.file(_image, fit: BoxFit.cover),
           ),
         ),
+        SizedBox(height: 20),
+        _isLoading
+            ? CircularProgressIndicator()
+            : _predictionResult != null
+                ? Column(
+                    children: [
+                      Text(
+                        _predictionResult!,
+                        style: TextStyle(fontSize: 20),
+                      ),
+                      SizedBox(height: 10),
+                      Text(
+                        _caloriesResult != null ? _caloriesResult.toString() : '',
+                        style: TextStyle(fontSize: 16),
+                      ),
+                    ],
+                  )
+                : Container(),
         Align(
           alignment: Alignment.bottomLeft,
           child: Padding(
