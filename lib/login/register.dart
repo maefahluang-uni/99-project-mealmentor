@@ -20,6 +20,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
         password: _passwordController.text.trim(),
       );
       print('Registered user: ${userCredential.user!.uid}');
+
       // Navigate to the UserInfoPage and pass user ID and email
       Navigator.push(
         context,

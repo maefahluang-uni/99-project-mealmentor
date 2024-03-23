@@ -16,7 +16,7 @@ class UserInfoPage extends StatefulWidget {
 class _UserInfoPageState extends State<UserInfoPage> {
   final TextEditingController _usernameController = TextEditingController();
   final TextEditingController _dobController = TextEditingController();
-  int _totalCalories = 0;
+  int _totalCalories = 0; // ตั้งค่าเริ่มต้นเป็น 0
 
   void _addUserInfoToFirestore(BuildContext context) {
     // Get a reference to the Firestore collection
@@ -26,8 +26,9 @@ class _UserInfoPageState extends State<UserInfoPage> {
     users.doc(widget.userId).set({
       'username': _usernameController.text.trim(),
       'dob': _dobController.text.trim(),
-      'totalCalories': _totalCalories,
-      'email': widget.email, // Use email passed from RegisterScreen
+      'totalCalories':
+          _totalCalories, // ใช้ค่าที่ผู้ใช้ป้อนเข้ามาแทนที่ค่าเริ่มต้น
+      'email': widget.email,
     }).then((value) {
       // Navigate to the HomePage after adding user info
       Navigator.pushReplacement(
@@ -74,7 +75,8 @@ class _UserInfoPageState extends State<UserInfoPage> {
               keyboardType: TextInputType.number,
               onChanged: (value) {
                 setState(() {
-                  _totalCalories = int.tryParse(value) ?? 0;
+                  _totalCalories = int.tryParse(value) ??
+                      0; // อัปเดตค่า _totalCalories เมื่อผู้ใช้ป้อนค่าใหม่
                 });
               },
             ),
