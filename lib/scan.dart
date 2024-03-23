@@ -1,5 +1,3 @@
-// scan.dart
-
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
@@ -82,7 +80,8 @@ class _ImagePickerWidgetState extends State<ImagePickerWidget> {
       _isLoading = true;
     });
 
-    final url = Uri.parse('https://pinecone-api-dfkeodpluq-uc.a.run.app/predict');
+    final url =
+        Uri.parse('https://pinecone-api-dfkeodpluq-uc.a.run.app/predict');
     final request = http.MultipartRequest('POST', url);
     request.files.add(await http.MultipartFile.fromPath('image', _image.path));
 
@@ -92,7 +91,8 @@ class _ImagePickerWidgetState extends State<ImagePickerWidget> {
       final responseJson = jsonDecode(responseBody);
       setState(() {
         _predictionResult = responseJson['category'];
-        _caloriesResult = double.tryParse(responseJson['calories'] ?? ''); // Convert to double
+        _caloriesResult = double.tryParse(
+            responseJson['calories'] ?? ''); // Convert to double
         _isLoading = false;
       });
     } else {
@@ -128,7 +128,9 @@ class _ImagePickerWidgetState extends State<ImagePickerWidget> {
                       ),
                       SizedBox(height: 10),
                       Text(
-                        _caloriesResult != null ? _caloriesResult.toString() : '',
+                        _caloriesResult != null
+                            ? _caloriesResult.toString()
+                            : '',
                         style: TextStyle(fontSize: 16),
                       ),
                     ],
