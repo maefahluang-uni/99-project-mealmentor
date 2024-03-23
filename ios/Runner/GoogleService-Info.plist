@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>API_KEY</key>
+	<string>AIzaSyCUudgnxE1pGdIAG3e0oon2QokHuHkat9I</string>
+	<key>GCM_SENDER_ID</key>
+	<string>478217884282</string>
+	<key>PLIST_VERSION</key>
+	<string>1</string>
+	<key>BUNDLE_ID</key>
+	<string>com.example.mealmentor</string>
+	<key>PROJECT_ID</key>
+	<string>mealmentor-d2096</string>
+	<key>STORAGE_BUCKET</key>
+	<string>mealmentor-d2096.appspot.com</string>
+	<key>IS_ADS_ENABLED</key>
+	<false></false>
+	<key>IS_ANALYTICS_ENABLED</key>
+	<false></false>
+	<key>IS_APPINVITE_ENABLED</key>
+	<true></true>
+	<key>IS_GCM_ENABLED</key>
+	<true></true>
+	<key>IS_SIGNIN_ENABLED</key>
+	<true></true>
+	<key>GOOGLE_APP_ID</key>
+	<string>1:478217884282:ios:8ba0ed28545cb2a3fa21c3</string>
+	<key>DATABASE_URL</key>
+	<string>https://mealmentor-d2096-default-rtdb.firebaseio.com</string>
+</dict>
+</plist>
