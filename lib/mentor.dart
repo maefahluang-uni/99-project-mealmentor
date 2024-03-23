@@ -1,8 +1,8 @@
-import 'package:flutter/foundation.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:mealmentor/models/MyMenus.dart';
-import 'package:mealmentor/models/connect_model.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:mealmentor/connection.dart';
+import 'package:mealmentor/models/MyMenus.dart';
 import 'package:percent_indicator/circular_percent_indicator.dart';
 
 class MentorPage extends StatefulWidget {
@@ -11,26 +11,9 @@ class MentorPage extends StatefulWidget {
 }
 
 class _MentorPageState extends State<MentorPage> {
-  double progressValue = 0; // Initialize the progress value to 0
-  int totalCalories = 2500; // Total calories target
-  int consumedCalories = 0; // Initialize consumed calories to 0
-
-  // Function to add consumed calories and update progress
-  void addCalories(int calories) {
-    setState(() {
-      consumedCalories += calories;
-      // Calculate progress value as a ratio of consumed to total calories
-      progressValue = consumedCalories / totalCalories;
-      // Ensure progress value stays within 0 and 1
-      progressValue = progressValue.clamp(0.0, 1.0);
-    });
-  }
-
-  // Function to calculate remaining calories
-  int remainingCalories() {
-    return ((1 - progressValue) * totalCalories).round();
-  }
-
+  int totalCalories = 0; // เปลี่ยนจาก 1 เป็น 0
+  double progressValue = 0;
+  int consumedCalories = 0;
   final List<int> _calrories = [200, 300, 500, 700, 250, 100];
 
   final List _post = [
@@ -41,6 +24,52 @@ class _MentorPageState extends State<MentorPage> {
     'Menu 5',
     'Menu 6',
   ];
+
+  @override
+  void initState() {
+    super.initState();
+    fetchTotalCalories();
+  }
+
+  void fetchTotalCalories() async {
+    try {
+      // ดึงข้อมูลผู้ใช้ปัจจุบันจาก Firebase Authentication
+      User? user = FirebaseAuth.instance.currentUser;
+
+      if (user != null) {
+        String userId = user.uid; // userId ของผู้ใช้ปัจจุบัน
+        DocumentSnapshot snapshot = await FirebaseFirestore.instance
+            .collection('users')
+            .doc(userId)
+            .get();
+
+        if (snapshot.exists) {
+          setState(() {
+            totalCalories = snapshot.get('totalCalories');
+            // ใช้ค่า totalCalories ที่มาจาก Firestore
+          });
+        } else {
+          print('Document does not exist');
+        }
+      } else {
+        print('User is not logged in');
+      }
+    } catch (e) {
+      print('Error fetching total calories: $e');
+    }
+  }
+
+  void addCalories(int calories) {
+    setState(() {
+      consumedCalories += calories;
+      progressValue = consumedCalories / totalCalories;
+      progressValue = progressValue.clamp(0.0, 1.0);
+    });
+  }
+
+  int remainingCalories() {
+    return (totalCalories - consumedCalories).clamp(0, totalCalories);
+  }
 
   @override
   Widget build(BuildContext context) {
