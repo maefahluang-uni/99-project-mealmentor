@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:mealmentor/home.dart';
 import 'package:mealmentor/models/connect_model.dart';
 import 'package:flutter_svg/svg.dart';
 
