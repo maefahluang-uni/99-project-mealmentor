@@ -4,6 +4,8 @@ import 'package:image_picker/image_picker.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 
+import 'package:mealmentor/mentor.dart';
+
 class ScanPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
@@ -132,6 +134,20 @@ class _ImagePickerWidgetState extends State<ImagePickerWidget> {
                             ? _caloriesResult.toString()
                             : '',
                         style: TextStyle(fontSize: 16),
+                      ),
+                      ElevatedButton(
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => MentorPage(
+                                category: _predictionResult,
+                                calories: _caloriesResult,
+                              ),
+                            ),
+                          );
+                        },
+                        child: Text('Go to Mentor Page'),
                       ),
                     ],
                   )

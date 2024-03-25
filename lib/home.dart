@@ -5,6 +5,10 @@ import 'package:mealmentor/scan.dart';
 
 class HomePage extends StatefulWidget {
   @override
+  final String? category;
+  final double? calories;
+
+  const HomePage({Key? key, this.category, this.calories}) : super(key: key);
   _HomePageState createState() => _HomePageState();
 }
 
