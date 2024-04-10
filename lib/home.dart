@@ -4,7 +4,6 @@ import 'package:mealmentor/mentor.dart';
 import 'package:mealmentor/scan.dart';
 
 class HomePage extends StatefulWidget {
-  @override
   final String? category;
   final double? calories;
 
@@ -14,9 +13,12 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   int _currentIndex = 0;
+  List<String> items = [];
 
   final List<Widget> _pages = [
-    MentorPage(),
+    const MentorPage(
+      items: [],
+    ),
     ScanPage(),
     ProfilePage(),
   ];
