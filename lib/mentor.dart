@@ -5,12 +5,22 @@ import 'package:percent_indicator/circular_percent_indicator.dart';
 import 'dart:async';
 import 'package:health/health.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:mealmentor/connection.dart';
+import 'dart:io';
 
 class MentorPage extends StatefulWidget {
   final String? category;
   final double? calories;
+  final File? imageFile;
+  final List<String> items; // Declare the items parameter
 
-  const MentorPage({Key? key, this.category, this.calories}) : super(key: key);
+  const MentorPage({
+    Key? key,
+    this.category,
+    this.calories,
+    this.imageFile,
+    required this.items, // Require the items parameter
+  }) : super(key: key);
 
   @override
   _MentorPageState createState() => _MentorPageState();
@@ -44,7 +54,7 @@ class _MentorPageState extends State<MentorPage> {
   HealthFactory health = HealthFactory(useHealthConnectIfAvailable: true);
 
 /////////////////////////////////////
-/// Health Connect API Start point///
+  /// Health Connect API Start point///
 /////////////////////////////////////
 
   Future authorize() async {
@@ -141,17 +151,22 @@ class _MentorPageState extends State<MentorPage> {
   }
 
 /////////////////////////////////////
-/// Health Connect API End point ////
+  /// Health Connect API End point ////
 /////////////////////////////////////
-
 
   int totalCalories = 0; // เปลี่ยนจาก 1 เป็น 0
   double progressValue = 0;
   int consumedCalories = 0;
 
+  File? _imageFile;
+
+  List<String> items = []; // ตัวอย่างรายการที่มีอยู่แล้ว
+
   @override
   void initState() {
     super.initState();
+    _imageFile = widget.imageFile;
+    items = widget.items; // Assign the value of the items parameter
     fetchTotalCalories();
   }
 
@@ -163,11 +178,6 @@ class _MentorPageState extends State<MentorPage> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           SizedBox(height: 20),
-          // แสดงข้อมูล widget.category และ widget.calories ที่ได้รับมาจากหน้า scan.dart
-          Text('Category: ${widget.category}'),
-          Text('Calories: ${widget.calories}'),
-          SizedBox(height: 20),
-
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
@@ -278,7 +288,7 @@ class _MentorPageState extends State<MentorPage> {
                   ),
                   borderRadius: BorderRadius.circular(12.0),
                 ),
-                height: MediaQuery.of(context).size.height * 0.35,
+                height: MediaQuery.of(context).size.height * 0.3,
               ),
               Positioned(
                 top: 20,
@@ -306,33 +316,93 @@ class _MentorPageState extends State<MentorPage> {
                   ),
                 ),
               ),
-              Center(
-            child: Column(
-              children: [
-                SizedBox(height: 100),
-                Text("Press Auth Button first then Sync cal data"),
-                TextButton(
-                    onPressed: authorize,
-                    child: Text("Auth", style: TextStyle(color: Colors.white)),
-                    style: ButtonStyle(
-                        backgroundColor: MaterialStatePropertyAll(Colors.blue))),
-                TextButton(
-                    onPressed: fetchBurnedCals, //เรียกใช้ method fetchedBurnedCals และส่งค่าเข้าตัวแปร burnedCals
-                    child: Text("Sync cal data",
-                        style: TextStyle(color: Colors.white)),
-                    style: ButtonStyle(
-                        backgroundColor: MaterialStatePropertyAll(Colors.blue))),
-              ],
-            ),
-          ),
-              SizedBox(
-                height: 40,
+              Positioned(
+                top: 70,
+                left: 20,
+                right: 20,
+                child: Container(
+                  height: 300,
+                  child: Column(
+                    children: [
+                      Expanded(
+                        child: ListView.separated(
+                          itemCount: items.length,
+                          separatorBuilder: (context, index) => SizedBox(
+                            height: 15,
+                          ),
+                          itemBuilder: (context, index) {
+                            if (items.isEmpty) {
+                              return Container();
+                            } else {
+                              return Container(
+                                height: 100,
+                                child: Row(
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceEvenly,
+                                  children: [
+                                    //ที่สำหรับใส่รูปอาหารที่ดึงค่ามา
+                                    _imageFile != null
+                                        ? Image.file(
+                                            _imageFile!,
+                                            width: 80,
+                                            height: 80,
+                                            fit: BoxFit.cover,
+                                          )
+                                        : Icon(
+                                            Icons.image,
+                                            size: 80,
+                                          ),
+                                    Column(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.center,
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          '${widget.category}',
+                                          style: TextStyle(
+                                              fontWeight: FontWeight.w500,
+                                              color: Colors.black,
+                                              fontSize: 16),
+                                        ),
+                                        Text(
+                                          '${widget.calories} calorie',
+                                          style: TextStyle(
+                                              color: Colors.black,
+                                              fontSize: 13,
+                                              fontWeight: FontWeight.w600),
+                                        ),
+                                      ],
+                                    )
+                                  ],
+                                ),
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  borderRadius: BorderRadius.circular(16),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color:
+                                          Color(0xff1D1617).withOpacity(0.07),
+                                      offset: Offset(0, 10),
+                                      blurRadius: 40,
+                                      spreadRadius: 0,
+                                    ),
+                                  ],
+                                ),
+                              );
+                            }
+                          },
+                        ),
+                      ),
+                      // เพิ่มปุ่มเพื่อเพิ่ม Card
+                    ],
+                  ),
+                ),
               ),
-              SizedBox(height: 40),
             ],
           ),
           SizedBox(
-            height: 40,
+            height: 20,
           ),
           Expanded(
             child: Stack(
@@ -346,10 +416,10 @@ class _MentorPageState extends State<MentorPage> {
                     ),
                     borderRadius: BorderRadius.circular(12.0),
                   ),
-                  height: MediaQuery.of(context).size.height * 0.5,
+                  height: MediaQuery.of(context).size.height * 0.3,
                 ),
                 Positioned(
-                  top: 80,
+                  top: 70,
                   left: 50,
                   right: 50,
                   child: Container(
@@ -381,14 +451,59 @@ class _MentorPageState extends State<MentorPage> {
                       child: Text(
                         'Burning Activities',
                         style: TextStyle(
-                          color: Color(0xFF2FFFAF),
+                          color: Color.fromARGB(255, 0, 0, 0),
                           fontSize: 24,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
                     ),
                   ),
-                )
+                ),
+                Positioned(
+                  top: 120, // Position Today Meal from top
+                  left: 50, // Position from left
+                  right: 50, // Position from right
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Color.fromARGB(255, 145, 255, 112),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(20.0),
+                      ),
+                    ),
+                    onPressed: authorize,
+                    child: Text(
+                      'Auth',
+                      style: TextStyle(
+                        color: Color.fromARGB(255, 255, 255, 255),
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ),
+                Positioned(
+                  top: 167.5, // Position Today Meal from top
+                  left: 50, // Position from left
+                  right: 50, // Position from right
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Color.fromARGB(255, 145, 255, 112),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(20.0),
+                      ),
+                    ),
+                    onPressed:
+                        fetchBurnedCals, //เรียกใช้ method fetchedBurnedCals และส่งค่าเข้าตัวแปร burnedCals
+                    child: Text(
+                      'Sync cal data',
+                      style: TextStyle(
+                        color: Color.fromARGB(255, 255, 255, 255),
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ),
               ],
             ),
           ),

@@ -40,6 +40,12 @@ class _ImagePickerWidgetState extends State<ImagePickerWidget> {
   bool _isLoading = false;
 
   final ImagePicker _picker = ImagePicker();
+  List<String> items = []; // ตัวอย่างรายการที่มีอยู่แล้ว
+  void addCard() {
+    setState(() {
+      items.add('Card ${items.length + 1}'); // เพิ่มรายการ Card ใหม่ลงในรายการ
+    });
+  }
 
   @override
   void initState() {
@@ -137,17 +143,22 @@ class _ImagePickerWidgetState extends State<ImagePickerWidget> {
                       ),
                       ElevatedButton(
                         onPressed: () {
+                          setState(() {
+                            items.add('Card ${items.length + 1}');
+                          });
                           Navigator.push(
                             context,
                             MaterialPageRoute(
                               builder: (context) => MentorPage(
                                 category: _predictionResult,
                                 calories: _caloriesResult,
+                                imageFile: _image,
+                                items: items,
                               ),
                             ),
                           );
                         },
-                        child: Text('Go to Mentor Page'),
+                        child: Text('Add this meal'),
                       ),
                     ],
                   )
