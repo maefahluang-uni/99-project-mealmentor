@@ -53,7 +53,8 @@ class ProfilePage extends StatelessWidget {
                     height: 16,
                   ),
                   Text(
-                    userData['username'], // Use the username from Firestore
+                    userData[
+                        'username'], // Use the username from Firestore test
                     style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
