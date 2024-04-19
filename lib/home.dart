@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:mealmentor/Profile.dart';
+import 'package:mealmentor/profile/Profile.dart';
 import 'package:mealmentor/mentor.dart';
 import 'package:mealmentor/scan.dart';
 
