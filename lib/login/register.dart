@@ -167,7 +167,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(10.0),
                               )),
-                          onPressed: () => _registerWithEmailAndPassword,
+                          onPressed: () => _registerWithEmailAndPassword (context),
                           child: Text(
                             'Sign up',
                             style: TextStyle(
