@@ -1,6 +1,9 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_storage/firebase_storage.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:mealmentor/home.dart'; // Import HomePage
 import 'package:mealmentor/profile/upage.dart'; // Import each function file
 import 'package:mealmentor/profile/upweight.dart';
@@ -17,13 +20,36 @@ class ProfilePage extends StatelessWidget {
       );
     }
 
+    Future<void> _showImagePicker(BuildContext context) async {
+      final picker = ImagePicker();
+      final pickedImage = await picker.getImage(source: ImageSource.gallery);
+
+      if (pickedImage != null) {
+        final String imageFileName =
+            'user_avatar_${DateTime.now().millisecondsSinceEpoch}.jpg';
+        final firebaseStorageRef =
+            FirebaseStorage.instance.ref().child('user_avatars/$imageFileName');
+        final uploadTask = firebaseStorageRef.putFile(File(pickedImage.path));
+
+        uploadTask.whenComplete(() async {
+          final imageUrl = await firebaseStorageRef.getDownloadURL();
+          await FirebaseFirestore.instance
+              .collection('users')
+              .doc(user.uid)
+              .update({
+            'profileImageUrl': imageUrl,
+          });
+        });
+      }
+    }
+
     return Scaffold(
       appBar: AppBar(
         title: Text(
           'Profile Page',
           style: TextStyle(
             color: Colors.black,
-            fontSize: 16, // Reduced font size
+            fontSize: 16,
             fontWeight: FontWeight.bold,
           ),
         ),
@@ -33,7 +59,7 @@ class ProfilePage extends StatelessWidget {
       ),
       body: FutureBuilder<DocumentSnapshot>(
         future:
-            FirebaseFirestore.instance.collection('users').doc(user.uid).get(),
+            FirebaseFirestore.instance.collection('users').doc(user!.uid).get(),
         builder:
             (BuildContext context, AsyncSnapshot<DocumentSnapshot> snapshot) {
           if (snapshot.hasError) {
@@ -58,19 +84,25 @@ class ProfilePage extends StatelessWidget {
                 SizedBox(height: 20),
                 Row(
                   children: [
-                    CircleAvatar(
-                      radius: 60,
-                      backgroundColor: Colors.blue,
-                      // Add profile picture here
+                    GestureDetector(
+                      onTap: () {
+                        _showImagePicker(context);
+                      },
+                      child: CircleAvatar(
+                        radius: 60,
+                        backgroundColor: Colors.blue,
+                        backgroundImage:
+                            NetworkImage(userData['profileImageUrl'] ?? ''),
+                      ),
                     ),
-                    SizedBox(width: 10),
+                    SizedBox(width: 20),
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          userData['username'], // Display username here
+                          '${userData['username']}',
                           style: TextStyle(
-                            fontSize: 16, // Reduced font size
+                            fontSize: 17,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
@@ -80,7 +112,7 @@ class ProfilePage extends StatelessWidget {
                             Text(
                               'Age: ${userData['age']} years old',
                               style: TextStyle(
-                                fontSize: 14, // Reduced font size
+                                fontSize: 14,
                               ),
                             ),
                             IconButton(
@@ -97,13 +129,13 @@ class ProfilePage extends StatelessWidget {
                             ),
                           ],
                         ),
-                        SizedBox(height: 10), // Add spacing between data
+                        SizedBox(height: 10),
                         Row(
                           children: [
                             Text(
                               '${userData['totalCalories']} kcal / day',
                               style: TextStyle(
-                                fontSize: 14, // Reduced font size
+                                fontSize: 14,
                               ),
                             ),
                             IconButton(
@@ -130,7 +162,7 @@ class ProfilePage extends StatelessWidget {
                 Text(
                   'Set Motivation',
                   style: TextStyle(
-                    fontSize: 20, // Reduced font size
+                    fontSize: 20,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
@@ -141,8 +173,8 @@ class ProfilePage extends StatelessWidget {
                     Row(
                       children: [
                         Text(
-                          'BEGIN ${userData['begin_kg']} KG',
-                          style: TextStyle(fontSize: 12), // Reduced font size
+                          'Begin ${userData['begin_kg']} KG',
+                          style: TextStyle(fontSize: 12),
                         ),
                         IconButton(
                           icon: Icon(Icons.edit),
@@ -162,7 +194,7 @@ class ProfilePage extends StatelessWidget {
                       children: [
                         Text(
                           'Now ${userData['now_kg'] ?? ''} KG',
-                          style: TextStyle(fontSize: 12), // Reduced font size
+                          style: TextStyle(fontSize: 12),
                         ),
                         IconButton(
                           icon: Icon(Icons.edit),
@@ -171,10 +203,7 @@ class ProfilePage extends StatelessWidget {
                               context: context,
                               builder: (BuildContext context) {
                                 return _buildEditDialog(
-                                    context,
-                                    'Now',
-                                    userData['now_kg'] ??
-                                        ''); // Use ?? operator as in Text
+                                    context, 'Now', userData['now_kg'] ?? '');
                               },
                             );
                           },
@@ -185,7 +214,7 @@ class ProfilePage extends StatelessWidget {
                       children: [
                         Text(
                           'GOAL ${userData['goal_kg'] ?? ''} KG',
-                          style: TextStyle(fontSize: 12), // Reduced font size
+                          style: TextStyle(fontSize: 12),
                         ),
                         IconButton(
                           icon: Icon(Icons.edit),
@@ -206,9 +235,7 @@ class ProfilePage extends StatelessWidget {
                 SizedBox(height: 20),
                 Text(
                   'About me',
-                  style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold), // Reduced font size
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                 ),
                 SizedBox(height: 8),
                 ListTile(
