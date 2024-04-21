@@ -7,6 +7,7 @@ import 'package:health/health.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:mealmentor/connection.dart';
 import 'dart:io';
+import 'package:mealmentor/scan.dart';
 
 class MentorPage extends StatefulWidget {
   final String? category;
@@ -41,6 +42,22 @@ enum AppState {
 }
 
 class _MentorPageState extends State<MentorPage> {
+  late double calories;
+
+  @override
+  void initState() {
+    super.initState();
+    calories = widget.calories ?? 0.0;
+    _imageFile = widget.imageFile;
+    items = widget.items; // Assign the value of the items parameter
+    fetchTotalCalories(); // Assign a default value if widget.calories is null
+    consumedCalories = widget.calories?.toInt() ?? 0;
+    progressValue = consumedCalories / totalCalories;
+    progressValue = progressValue.clamp(0.0, 1.0);
+    progressValue = 0.0;
+    // Set progressValue to 0 initially (remove this block of code)
+  }
+
   int burnedCals = 0; // ตัวแปรที่รับข้อมูลจาก fetchBurnedCals()
 
   AppState _state = AppState.DATA_NOT_FETCHED;
@@ -155,20 +172,19 @@ class _MentorPageState extends State<MentorPage> {
 /////////////////////////////////////
 
   int totalCalories = 0; // เปลี่ยนจาก 1 เป็น 0
-  double progressValue = 0;
+  double progressValue = 0.0;
   int consumedCalories = 0;
-
   File? _imageFile;
 
   List<String> items = []; // ตัวอย่างรายการที่มีอยู่แล้ว
 
-  @override
-  void initState() {
-    super.initState();
-    _imageFile = widget.imageFile;
-    items = widget.items; // Assign the value of the items parameter
-    fetchTotalCalories();
-  }
+  // @override
+  // void initState() {
+  //   super.initState();
+  // _imageFile = widget.imageFile;
+  // //  items = widget.items; // Assign the value of the items parameter
+  //  fetchTotalCalories();
+  //}
 
   @override
   Widget build(BuildContext context) {
@@ -208,14 +224,14 @@ class _MentorPageState extends State<MentorPage> {
                 lineWidth: 13.0,
                 percent: progressValue,
                 backgroundColor: Color.fromARGB(255, 255, 255, 255),
-                progressColor: Colors.blueAccent,
+                progressColor: Color.fromARGB(255, 1, 140, 255),
                 center: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Text(
                       '${remainingCalories()}',
                       style: TextStyle(
-                        color: Color.fromARGB(255, 247, 247, 247),
+                        color: Color.fromARGB(255, 255, 255, 255),
                         fontSize: 24,
                         fontWeight: FontWeight.bold,
                       ),
@@ -550,6 +566,8 @@ class _MentorPageState extends State<MentorPage> {
         if (snapshot.exists) {
           setState(() {
             totalCalories = snapshot.get('totalCalories');
+            // เรียกใช้งาน updateProgress() เพื่ออัปเดตค่าความคืบหน้า
+            updateProgress();
           });
         } else {
           print('Document does not exist');
@@ -562,15 +580,46 @@ class _MentorPageState extends State<MentorPage> {
     }
   }
 
-  void addCalories(int calories) {
+  // void addCalories(double calories) {
+  //   setState(() {
+  //   consumedCalories += calories.round();
+//progressValue = consumedCalories / totalCalories;
+  //   progressValue = progressValue.clamp(0.0, 1.0);
+
+  // เรียกใช้ฟังก์ชัน remainingCalories() เพื่อให้ค่า progressValue มีการอัปเดต
+//remainingCalories();
+  //  });
+  // }
+
+  int remainingCalories() {
+    return totalCalories - consumedCalories;
+  }
+
+  void updateProgress() {
     setState(() {
-      consumedCalories += calories;
       progressValue = consumedCalories / totalCalories;
-      progressValue = progressValue.clamp(0.0, 1.0);
+      progressValue = progressValue.clamp(
+          0.0, 1.0); // ตรวจสอบและจำกัดค่าให้อยู่ในช่วงระหว่าง 0.0 ถึง 1.0
     });
   }
 
-  int remainingCalories() {
-    return (totalCalories - consumedCalories).clamp(0, totalCalories);
+  void addScannedFood() {
+    setState(() {
+      items.add(widget.category!);
+      consumedCalories += (widget.calories ?? 0).toInt();
+      updateProgress(); // เพิ่มเส้นทางนี้เพื่ออัปเดตค่าความคืบหน้า
+    });
+  }
+
+  void addCalories(double calories) {
+    setState(() {
+      if (consumedCalories + calories <= totalCalories) {
+        consumedCalories += calories.toInt();
+        updateProgress(); // เพิ่มเส้นทางนี้เพื่ออัปเดตค่าความคืบหน้า
+      } else {
+        print(
+            "Cannot add more calories. Consumed calories would exceed total calories.");
+      }
+    });
   }
 }
