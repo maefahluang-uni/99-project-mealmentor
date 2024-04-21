@@ -2,25 +2,171 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:percent_indicator/circular_percent_indicator.dart';
+import 'dart:async';
+import 'package:health/health.dart';
+import 'package:permission_handler/permission_handler.dart';
+import 'package:mealmentor/connection.dart';
+import 'dart:io';
 
 class MentorPage extends StatefulWidget {
   final String? category;
   final double? calories;
+  final File? imageFile;
+  final List<String> items; // Declare the items parameter
 
-  const MentorPage({Key? key, this.category, this.calories}) : super(key: key);
+  const MentorPage({
+    Key? key,
+    this.category,
+    this.calories,
+    this.imageFile,
+    required this.items, // Require the items parameter
+  }) : super(key: key);
 
   @override
   _MentorPageState createState() => _MentorPageState();
 }
 
+enum AppState {
+  DATA_NOT_FETCHED,
+  FETCHING_DATA,
+  DATA_READY,
+  NO_DATA,
+  AUTHORIZED,
+  AUTH_NOT_GRANTED,
+  DATA_ADDED,
+  DATA_DELETED,
+  DATA_NOT_ADDED,
+  DATA_NOT_DELETED,
+  STEPS_READY,
+}
+
 class _MentorPageState extends State<MentorPage> {
+  int burnedCals = 0; // ตัวแปรที่รับข้อมูลจาก fetchBurnedCals()
+
+  AppState _state = AppState.DATA_NOT_FETCHED;
+
+  static final types = [
+    HealthDataType.WORKOUT,
+  ];
+
+  final permissions = types.map((e) => HealthDataAccess.READ).toList();
+
+  HealthFactory health = HealthFactory(useHealthConnectIfAvailable: true);
+
+/////////////////////////////////////
+  /// Health Connect API Start point///
+/////////////////////////////////////
+
+  Future authorize() async {
+    await Permission.activityRecognition.request();
+    await Permission.location.request();
+
+    bool? hasPermissions =
+        await health.hasPermissions(types, permissions: permissions);
+
+    bool authorized = false;
+    if (hasPermissions != null && !hasPermissions) {
+      try {
+        authorized =
+            await health.requestAuthorization(types, permissions: permissions);
+        print("Authorization requested. Authorization status: $authorized");
+      } catch (error) {
+        print("Exception in authorize: $error");
+      }
+    } else {
+      print("Already authorized.");
+      authorized =
+          true; // If permissions are already granted, consider it authorized
+    }
+
+    setState(() => _state =
+        (authorized) ? AppState.AUTHORIZED : AppState.AUTH_NOT_GRANTED);
+  }
+
+  /// Fetch steps from the health plugin and show them in the app.
+  Future<void> fetchBurnedCals() async {
+    // get current date and midnight
+    final now = DateTime.now();
+    final midnight = DateTime(now.year, now.month, now.day);
+
+    // Check permissions for workout data
+    bool workoutPermission =
+        await health.hasPermissions([HealthDataType.WORKOUT]) ?? false;
+
+    if (!workoutPermission) {
+      workoutPermission =
+          await health.requestAuthorization([HealthDataType.WORKOUT]);
+    }
+
+    if (workoutPermission) {
+      try {
+        // Fetch workout data since midnight
+        final workouts = await health
+            .getHealthDataFromTypes(midnight, now, [HealthDataType.WORKOUT]);
+
+        // Calculate total burned calories from workouts (if any)
+        int totalBurnedCalories = 0;
+        workouts.forEach((workout) {
+          if (workout.value is WorkoutHealthValue) {
+            final burnedCalories =
+                (workout.value as WorkoutHealthValue).totalEnergyBurned;
+            if (burnedCalories != null) {
+              totalBurnedCalories += burnedCalories;
+            }
+          }
+        });
+
+        // Update progressValue with the calculated totalBurnedCalories
+        setState(() {
+          burnedCals = totalBurnedCalories;
+        });
+
+        print('Total burned calories from workouts: $totalBurnedCalories');
+      } catch (error) {
+        print("Caught exception in getHealthDataFromTypes: $error");
+      }
+    } else {
+      print("Authorization not granted - error in authorization");
+    }
+  }
+
+  /// Revoke access to health data. Note, this only has an effect on Android.
+  Future revokeAccess() async {
+    try {
+      await health.revokePermissions();
+    } catch (error) {
+      print("Caught exception in revokeAccess: $error");
+    }
+  }
+
+  String _authorizationStatusText() {
+    switch (_state) {
+      case AppState.AUTHORIZED:
+        return "Access Granted!";
+      case AppState.AUTH_NOT_GRANTED:
+        return "Authorization not given. Please check permissions.";
+      default:
+        return "";
+    }
+  }
+
+/////////////////////////////////////
+  /// Health Connect API End point ////
+/////////////////////////////////////
+
   int totalCalories = 0; // เปลี่ยนจาก 1 เป็น 0
   double progressValue = 0;
   int consumedCalories = 0;
 
+  File? _imageFile;
+
+  List<String> items = []; // ตัวอย่างรายการที่มีอยู่แล้ว
+
   @override
   void initState() {
     super.initState();
+    _imageFile = widget.imageFile;
+    items = widget.items; // Assign the value of the items parameter
     fetchTotalCalories();
   }
 
@@ -31,10 +177,6 @@ class _MentorPageState extends State<MentorPage> {
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          SizedBox(height: 20),
-          // แสดงข้อมูล widget.category และ widget.calories ที่ได้รับมาจากหน้า scan.dart
-          Text('Category: ${widget.category}'),
-          Text('Calories: ${widget.calories}'),
           SizedBox(height: 20),
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -94,7 +236,7 @@ class _MentorPageState extends State<MentorPage> {
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
                   Text(
-                    '$consumedCalories',
+                    '$burnedCals', // ใช้ตัวแปร burnedCals เพื่อแสดงค่าแคลอรี่ที่เผาผลาญ
                     style: TextStyle(
                       color: const Color.fromARGB(255, 255, 255, 255),
                       fontSize: 24,
@@ -146,7 +288,7 @@ class _MentorPageState extends State<MentorPage> {
                   ),
                   borderRadius: BorderRadius.circular(12.0),
                 ),
-                height: MediaQuery.of(context).size.height * 0.35,
+                height: MediaQuery.of(context).size.height * 0.3,
               ),
               Positioned(
                 top: 20,
@@ -174,14 +316,93 @@ class _MentorPageState extends State<MentorPage> {
                   ),
                 ),
               ),
-              SizedBox(
-                height: 40,
+              Positioned(
+                top: 70,
+                left: 20,
+                right: 20,
+                child: Container(
+                  height: 300,
+                  child: Column(
+                    children: [
+                      Expanded(
+                        child: ListView.separated(
+                          itemCount: items.length,
+                          separatorBuilder: (context, index) => SizedBox(
+                            height: 15,
+                          ),
+                          itemBuilder: (context, index) {
+                            if (items.isEmpty) {
+                              return Container();
+                            } else {
+                              return Container(
+                                height: 100,
+                                child: Row(
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceEvenly,
+                                  children: [
+                                    //ที่สำหรับใส่รูปอาหารที่ดึงค่ามา
+                                    _imageFile != null
+                                        ? Image.file(
+                                            _imageFile!,
+                                            width: 80,
+                                            height: 80,
+                                            fit: BoxFit.cover,
+                                          )
+                                        : Icon(
+                                            Icons.image,
+                                            size: 80,
+                                          ),
+                                    Column(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.center,
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          '${widget.category}',
+                                          style: TextStyle(
+                                              fontWeight: FontWeight.w500,
+                                              color: Colors.black,
+                                              fontSize: 16),
+                                        ),
+                                        Text(
+                                          '${widget.calories} calorie',
+                                          style: TextStyle(
+                                              color: Colors.black,
+                                              fontSize: 13,
+                                              fontWeight: FontWeight.w600),
+                                        ),
+                                      ],
+                                    )
+                                  ],
+                                ),
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  borderRadius: BorderRadius.circular(16),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color:
+                                          Color(0xff1D1617).withOpacity(0.07),
+                                      offset: Offset(0, 10),
+                                      blurRadius: 40,
+                                      spreadRadius: 0,
+                                    ),
+                                  ],
+                                ),
+                              );
+                            }
+                          },
+                        ),
+                      ),
+                      // เพิ่มปุ่มเพื่อเพิ่ม Card
+                    ],
+                  ),
+                ),
               ),
-              SizedBox(height: 40),
             ],
           ),
           SizedBox(
-            height: 40,
+            height: 20,
           ),
           Expanded(
             child: Stack(
@@ -195,10 +416,10 @@ class _MentorPageState extends State<MentorPage> {
                     ),
                     borderRadius: BorderRadius.circular(12.0),
                   ),
-                  height: MediaQuery.of(context).size.height * 0.5,
+                  height: MediaQuery.of(context).size.height * 0.3,
                 ),
                 Positioned(
-                  top: 80,
+                  top: 70,
                   left: 50,
                   right: 50,
                   child: Container(
@@ -230,14 +451,59 @@ class _MentorPageState extends State<MentorPage> {
                       child: Text(
                         'Burning Activities',
                         style: TextStyle(
-                          color: Color(0xFF2FFFAF),
+                          color: Color.fromARGB(255, 0, 0, 0),
                           fontSize: 24,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
                     ),
                   ),
-                )
+                ),
+                Positioned(
+                  top: 120, // Position Today Meal from top
+                  left: 50, // Position from left
+                  right: 50, // Position from right
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Color.fromARGB(255, 145, 255, 112),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(20.0),
+                      ),
+                    ),
+                    onPressed: authorize,
+                    child: Text(
+                      'Auth',
+                      style: TextStyle(
+                        color: Color.fromARGB(255, 255, 255, 255),
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ),
+                Positioned(
+                  top: 167.5, // Position Today Meal from top
+                  left: 50, // Position from left
+                  right: 50, // Position from right
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Color.fromARGB(255, 145, 255, 112),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(20.0),
+                      ),
+                    ),
+                    onPressed:
+                        fetchBurnedCals, //เรียกใช้ method fetchedBurnedCals และส่งค่าเข้าตัวแปร burnedCals
+                    child: Text(
+                      'Sync cal data',
+                      style: TextStyle(
+                        color: Color.fromARGB(255, 255, 255, 255),
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ),
               ],
             ),
           ),
