@@ -352,6 +352,19 @@ class _MentorPageState extends State<MentorPage> {
                             } else {
                               return Container(
                                 height: 100,
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  borderRadius: BorderRadius.circular(16),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color:
+                                          Color(0xff1D1617).withOpacity(0.07),
+                                      offset: Offset(0, 10),
+                                      blurRadius: 40,
+                                      spreadRadius: 0,
+                                    ),
+                                  ],
+                                ),
                                 child: Row(
                                   mainAxisAlignment:
                                       MainAxisAlignment.spaceEvenly,
@@ -390,19 +403,6 @@ class _MentorPageState extends State<MentorPage> {
                                         ),
                                       ],
                                     )
-                                  ],
-                                ),
-                                decoration: BoxDecoration(
-                                  color: Colors.white,
-                                  borderRadius: BorderRadius.circular(16),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color:
-                                          Color(0xff1D1617).withOpacity(0.07),
-                                      offset: Offset(0, 10),
-                                      blurRadius: 40,
-                                      spreadRadius: 0,
-                                    ),
                                   ],
                                 ),
                               );
@@ -523,31 +523,54 @@ class _MentorPageState extends State<MentorPage> {
               ],
             ),
           ),
-          SizedBox(height: 20),
-          // แสดงรายการอาหารที่บันทึกไว้
-          StreamBuilder(
-            stream: FirebaseFirestore.instance.collection('meals').snapshots(),
-            builder: (context, AsyncSnapshot<QuerySnapshot> snapshot) {
-              if (snapshot.connectionState == ConnectionState.waiting) {
-                return CircularProgressIndicator();
-              }
-              final meals = snapshot.data!.docs;
-              return ListView.builder(
-                shrinkWrap: true,
-                itemCount: meals.length,
-                itemBuilder: (context, index) {
-                  final meal = meals[index];
-                  final category = meal['category'] as String?;
-                  final calories = meal['calories'] as int?;
-                  return ListTile(
-                    title: Text(category ?? ''),
-                    subtitle: Text(calories != null ? calories.toString() : ''),
+          ElevatedButton(
+            onPressed: () {
+              // โชว์ totalCalories ใน Dialog
+              showDialog(
+                context: context,
+                builder: (BuildContext context) {
+                  return AlertDialog(
+                    title: Text("Total Calories"),
+                    content: Text("$calories  "),
+                    actions: <Widget>[
+                      TextButton(
+                        onPressed: () {
+                          Navigator.of(context).pop();
+                        },
+                        child: Text("Close"),
+                      ),
+                    ],
                   );
                 },
               );
             },
+            child: Text("Check Total Calories"),
           ),
+          ElevatedButton(
+            onPressed: () {
+              // ตรวจสอบว่าค่า calories เป็นค่าบวกหรือไม่
+              if (calories > 0) {
+                // รับค่าจำนวนแคลอรี่ที่ต้องการเพิ่ม
+                double caloriesToAdd =
+                    calories.toDouble(); // ตั้งค่าตัวอย่างเป็น 100 แคลอรี่
+                // เรียกใช้เมธอด addCalories และส่งค่าแคลอรี่ที่ต้องการเพิ่ม
+                addCalories(caloriesToAdd);
+              } else {
+                // แสดงข้อความบนคอนโซลเมื่อค่า calories เป็นค่าลบ
+                print("Invalid value for calories: $calories");
+              }
+            },
+            child: Text("Add Calories"),
+          ),
+          SizedBox(height: 20),
         ],
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {
+          // Navigate back to the previous screen
+          Navigator.pop(context);
+        },
+        child: Icon(Icons.arrow_back),
       ),
     );
   }
