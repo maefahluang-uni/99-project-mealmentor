@@ -2,7 +2,6 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:http/http.dart' as http;
-import 'package:mealmentor/home.dart';
 import 'dart:convert';
 
 import 'package:mealmentor/mentor.dart';
@@ -157,7 +156,13 @@ class _ImagePickerWidgetState extends State<ImagePickerWidget> {
                                 items: items,
                               ),
                             ),
-                          );
+                          ).then((value) {
+                            // เมื่อกลับมาจากหน้า Mentor ให้เรียกใช้ addScannedFood() เพื่อเพิ่มข้อมูล
+                            if (value != null && value) {
+                              Navigator.pop(context,
+                                  true); // ส่งค่า true เพื่อบอกว่าข้อมูลถูกเพิ่มแล้ว
+                            }
+                          });
                         },
                         child: Text('Add this meal'),
                       ),
